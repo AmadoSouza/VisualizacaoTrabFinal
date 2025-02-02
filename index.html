@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Tendências, Conexões e Contribuições Regionais</title>
+
+    <!-- Bootstrap CSS -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    />
+
+    <!-- D3 (versão 7) e d3-sankey -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
+
+    <style>
+      body {
+        margin: 20px;
+      }
+      svg {
+        border: 1px solid #ccc;
+        margin-top: 15px;
+      }
+      #global-tooltip {
+        position: absolute;
+        background: rgba(0, 0, 0, 0.7);
+        color: #fff;
+        padding: 6px;
+        border-radius: 4px;
+        font-size: 12px;
+        pointer-events: none;
+        z-index: 9999999999; /* ou algo bem alto */
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <h2 class="mb-4">Tendências, Conexões e Contribuições Regionais</h2>
+
+      <!-- ================ SECTION STACKED AREA =============== -->
+      <div class="row">
+        <!-- Coluna esquerda: Gráfico -->
+        <div class="col-8">
+          <h3>Tendências Temporais (Stacked Area)</h3>
+          <div id="stacked-area"></div>
+        </div>
+        <!-- Coluna direita: Filtros -->
+        <div class="col-4">
+          <h5>Filtros:</h5>
+
+          <!-- Ano Mín e Máx com Range -->
+          <div class="mb-2">
+            <label for="stacked-year-min" class="form-label">
+              Ano Mín:
+              <span id="stacked-year-min-value">1990</span>
+            </label>
+            <input
+              type="range"
+              class="form-range"
+              id="stacked-year-min"
+              min="1990"
+              max="2015"
+              step="1"
+              value="1990"
+              oninput="document.getElementById('stacked-year-min-value').textContent = this.value"
+            />
+          </div>
+
+          <div class="mb-2">
+            <label for="stacked-year-max" class="form-label">
+              Ano Máx:
+              <span id="stacked-year-max-value">2015</span>
+            </label>
+            <input
+              type="range"
+              class="form-range"
+              id="stacked-year-max"
+              min="1990"
+              max="2015"
+              step="1"
+              value="2015"
+              oninput="document.getElementById('stacked-year-max-value').textContent = this.value"
+            />
+          </div>
+
+          <!-- Container para checkboxes de 'type' -->
+          <div class="mb-2">
+            <label>Tipo de Migração:</label>
+            <div id="stacked-type-container"></div>
+          </div>
+
+          <!-- Container checkboxes Origem - Área -->
+          <div class="mb-2">
+            <label>Origem - Área:</label>
+            <div id="stacked-orig-container"></div>
+          </div>
+
+          <button class="btn btn-primary mt-2" onclick="updateStackedArea()">
+            Aplicar Filtros
+          </button>
+        </div>
+      </div>
+      <hr class="my-5" />
+
+      <!-- ================= SECTION TREEMAP ================== -->
+      <div class="row">
+        <div class="col-8">
+          <h3>Contribuições Regionais (Treemap)</h3>
+          <div id="treemap"></div>
+        </div>
+        <div class="col-4">
+          <h5>Filtros:</h5>
+
+          <!-- Ano Mín e Máx com Range -->
+          <div class="mb-2">
+            <label for="treemap-year-min" class="form-label"
+              >Ano Mín:
+              <span id="treemap-year-min-value">1990</span>
+            </label>
+            <input
+              type="range"
+              class="form-range"
+              id="treemap-year-min"
+              min="1990"
+              max="2015"
+              step="1"
+              value="1990"
+              oninput="document.getElementById('treemap-year-min-value').textContent = this.value"
+            />
+          </div>
+
+          <div class="mb-2">
+            <label for="treemap-year-max" class="form-label"
+              >Ano Máx:
+              <span id="treemap-year-max-value">2015</span>
+            </label>
+            <input
+              type="range"
+              class="form-range"
+              id="treemap-year-max"
+              min="1990"
+              max="2015"
+              step="1"
+              value="2015"
+              oninput="document.getElementById('treemap-year-max-value').textContent = this.value"
+            />
+          </div>
+
+          <!-- Container checkboxes Origem - Área -->
+          <div class="mb-2">
+            <label>Origem - Área:</label>
+            <div id="treemap-orig-container"></div>
+          </div>
+
+          <!-- Container checkboxes Destino - Área -->
+          <div class="mb-2">
+            <label>Destino - Área:</label>
+            <div id="treemap-dest-container"></div>
+          </div>
+
+          <button class="btn btn-primary mt-2" onclick="updateTreemap()">
+            Aplicar Filtros
+          </button>
+        </div>
+      </div>
+      <hr class="my-5" />
+
+      <!-- ================= SECTION ALLUVIAL ================ -->
+      <div class="row">
+        <!-- Coluna esquerda: Gráfico -->
+        <div class="col-8">
+          <h3>Conexões entre países (Alluvial)</h3>
+          <div id="alluvial"></div>
+        </div>
+        <!-- Coluna direita: Filtros -->
+        <div class="col-4">
+          <h5>Filtros:</h5>
+
+          <!-- Ano Mín e Máx com Range -->
+          <div class="mb-2">
+            <label for="alluvial-year-min" class="form-label"
+              >Ano Mín:
+              <span id="alluvial-year-min-value">1990</span>
+            </label>
+            <input
+              type="range"
+              class="form-range"
+              id="alluvial-year-min"
+              min="1990"
+              max="2015"
+              step="1"
+              value="1990"
+              oninput="document.getElementById('alluvial-year-min-value').textContent = this.value"
+            />
+          </div>
+
+          <div class="mb-2">
+            <label for="alluvial-year-max" class="form-label"
+              >Ano Máx:
+              <span id="alluvial-year-max-value">2015</span>
+            </label>
+            <input
+              type="range"
+              class="form-range"
+              id="alluvial-year-max"
+              min="1990"
+              max="2015"
+              step="1"
+              value="2015"
+              oninput="document.getElementById('alluvial-year-max-value').textContent = this.value"
+            />
+          </div>
+
+          <!-- Fluxo Mín e Máx com Range -->
+          <div class="mb-2">
+            <label for="alluvial-flux-min" class="form-label">
+              Fluxo Mín:
+              <span id="alluvial-flux-min-value">0</span>
+            </label>
+            <input
+              type="range"
+              class="form-range"
+              id="alluvial-flux-min"
+              step="10000"
+              oninput="document.getElementById('alluvial-flux-min-value').textContent = this.value"
+            />
+          </div>
+
+          <div class="mb-2">
+            <label for="alluvial-flux-max" class="form-label">
+              Fluxo Máx:
+              <span id="alluvial-flux-max-value">999999</span>
+            </label>
+            <input
+              type="range"
+              class="form-range"
+              id="alluvial-flux-max"
+              step="10000"
+              oninput="document.getElementById('alluvial-flux-max-value').textContent = this.value"
+            />
+          </div>
+
+          <!-- Container para checkboxes de 'type' -->
+          <div class="mb-2">
+            <label>Tipo de Migração:</label>
+            <div id="alluvial-type-container"></div>
+          </div>
+
+          <!-- Container checkboxes Origem - Área -->
+          <div class="mb-2">
+            <label>Origem - Área:</label>
+            <div id="alluvial-orig-container"></div>
+          </div>
+
+          <!-- Container checkboxes Destino - Área -->
+          <div class="mb-2">
+            <label>Destino - Área:</label>
+            <div id="alluvial-dest-container"></div>
+          </div>
+
+          <button class="btn btn-primary mt-2" onclick="updateAlluvial()">
+            Aplicar Filtros
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tooltip Global -->
+    <div class="tooltip" id="global-tooltip"></div>
+
+    <!-- Bootstrap JS (opcional) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Scripts de visualização (JS) -->
+    <script src="js/alluvial.js"></script>
+    <script src="js/treemap.js"></script>
+    <script src="js/stackedArea.js"></script>
+  </body>
+</html>
